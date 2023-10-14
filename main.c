@@ -1,390 +1,313 @@
+// Bankanwendung
+
+// #########################################   PASSWORD-UMGANG   ########################################
+// #########################################   INFOS-TRANSAKTIONEN_&_ÜBERSICHT ##########################
 
 #include <stdio.h>
-#include <string.h>
+#include <string.h>                      // Für strcmp() und strstr()
+#include <stdlib.h>                      // Für exit()
+// #include <unistd.h>                   // Für sleep() und system("clear")
+#include <conio.h>                       // Für getch() -> Passwortverschleiern
 
-//#include "header.h"
+#include "header.h"
 
+#define MAX_NAME_SIZE 100
+#define MAX_PASSWORD_SIZE 100
 
-#define MAX_SIZE 255
+// ###################################################   FUNKTIONSPROTOTYPEN   ######################################
 
+void begruessung();
+void neue_Anmeldung(Bankkonto *konto);
+int LogIn(Bankkonto *konto);
+void zugang_Transaktionen(Bankkonto *konto);
+void hidePasswordInput(char *password); // Funktion zur Passwort-Eingabe mit Verschleierung
 
-// Konto erstellen: 1. neue Anmeldung
+// ###################################################   MAIN   ######################################
 
-void neue_Anmeldung() {
-
-    char Benutzer_Name[MAX_SIZE] ;
-    char Benutzer_Password[MAX_SIZE] ;
-    char file_name[MAX_SIZE];
-
-    FILE * benutzer;
-
-
-//#########################################  BENUTZER-ERSTELLEN   ######################################
-    printf("Bitte gebe deinen Benutzer_Namen ein. \n");                         // Benutzer_Name erstellen
-    scanf("%s", Benutzer_Name);
-
-    printf("Bitte gebe deinen Benutzer_Password ein. \n");                      // Benutzer_PW erstellen
-    scanf("%s", Benutzer_Password);                         // BEACHTE
-
-//Benutzer_Datei wird erstellt
-    strcpy(file_name,Benutzer_Name);                                        // wird kopiert, damit der 'file_name' geaendert werden kann, ohne den Benutzernamen zu aendern
-//    benutzer = fopen(strcat(strcat("01_benutzer\\",file_name) ,".txt"), "w");           // mit der 'strcat'-funktion wird das '.txt' an den eingegeben string angehangen
-
-
-//    strcat(file_name, ".txt");
-//    benutzer= fopen(strcat("./01_benutzer/", file_name), "w");
-
-
-    char str[]="01_benutzer/";                                                          // um die datei in einen unterorder zu speichern
-    strcat(str, file_name);
-    benutzer= fopen(strcat(str, ".txt"), "w");
-
-
-// fehlerabfrage
-    if(benutzer == NULL){
-        printf("FEHLER");
-        //check, ob schon so eine Datei besteht         TO-DO       -> siehe 'LogIn'-funktion
+int main()
+{
+    while (1)
+    {
+        begruessung();
     }
 
-// Benutzer_Name in datei speichern
-    fprintf(benutzer, "Name : ");
-    fprintf(benutzer, Benutzer_Name );              // wird in die Datei gespeichert
-    fprintf(benutzer, "\n");
-
-// Benutzer_PW wird in die Datei gespeichert
-    fprintf(benutzer, "Password: PW");
-    fprintf(benutzer, Benutzer_Password );              // wird in die Datei gespeichert
-    fprintf(benutzer, "\n");
-
-//###################################################   ENDE   ####################################################
-
-
-    fclose(benutzer);                                       // Datei wird geschlossen
+    return 0;
 }
 
-void LogIn() {
-    char buchstabe = 'w';
+// ###################################################   FUNKTIONEN   ######################################
 
-    char Benutzer_Name[MAX_SIZE];
-    char Benutzer_Password[MAX_SIZE];
-    char Benutzer_Password_Check[MAX_SIZE];
-    char file_name[MAX_SIZE];
+void begruessung()
+{
+    int auswahl;
+    Bankkonto konto;                        // Bankkonto "konto": Struct
 
-    char file_content_01[MAX_SIZE];                // hier wird der Inhalt der Datei gespeichert
-    char file_content_02[MAX_SIZE];                // hier wird der Inhalt der Datei gespeichert
+    printf("Herzlich willkommen bei SPAR-RAIK-VOLK - Der Bank deines Vertrauens\n"
+           "Was moechtest du tun? \n"
+           "1. Neues Konto erstellen \n"
+           "2. Auf bestehendes Konto zugreifen \n"
+           "3. Programm beenden \n\n");
 
-    int file_content_int01 = 0;                      // fuer die 'fgetc'-funktion
-    int file_content_int02 = 0 ;
-    int a, b, c, d ;
-    int counter = 0 ;
-    int counter_01 = 0 ;
-    int counter_02= 0 ;
+    scanf("%i", &auswahl);
 
-    double file_address_01 = 0;
+    switch (auswahl)
+    {
+    case 1: // Neues Konto erstellen
+        printf("Deine Auswahl: Neues Konto erstellen \n");
+        neue_Anmeldung(&konto);
+        break;
+    case 2: // Auf ein bestehendes Konto zugreifen
+        printf("Deine Auswahl: Auf bestehendes Konto zugreifen \n");
+        if (LogIn(&konto)) // Wenn LogIn erfolgreich war, dann Zugang zu den Transaktionen
+        {
+            zugang_Transaktionen(&konto);
+        }
+        break;
+    case 3: // Programm beenden
+        printf("Deine Auswahl: Programm beenden \n");
+        exit(0); // Programm beenden
+    default:     // Ungültige Auswahl
+        printf("Ungueltige Auswahl \n");
+        break;
+    }
+}
 
-    FILE * benutzer ;
+void neue_Anmeldung(Bankkonto *konto)                   // Bankkonto *konto: Pointer auf ein Bankkonto
+{
+    char Benutzer_Password_CHECK[MAX_PASSWORD_SIZE];    // Wird für die Passwort-Überprüfung benötigt
 
-//#########################################   LOGIN_ABFRAGE   ###########################################
-//Benutzer-Abfrage
-    printf("LogIn Abfrage \n");
+    printf("\nBitte gib deinen Benutzer_Namen ein. \n");
+    scanf("%s", konto->Benutzer_Name);
+
+    printf("Bitte gib dein gewuenschtes Benutzer_Password ein. \n");
+    hidePasswordInput(konto->Benutzer_Password);        // Funktion zum Passwort-Eingeben mit Verschleierung
+
+    printf("\nBitte gib dein Benutzer_Password erneut ein. \n");
+    hidePasswordInput(Benutzer_Password_CHECK);
+
+    if (strcmp(konto->Benutzer_Password, Benutzer_Password_CHECK) != 0) // Wenn die Passwörter nicht übereinstimmen
+    {
+        printf("Die Passwoerter stimmen nicht ueberein und wird abgebrochen. \n\n");
+        return;
+    }
+
+    printf("\n\nBitte gib nun deinen Geldbetrag ein: \n"); // Erste Einzahlung
+    scanf("%lf", &konto->Geldbetrag_am_Konto);
+
+    printf("\nDein Konto wurde erstellt. \n"
+           "Vielen Dank für dein Vertrauen. \n\n");
+
+    FILE *benutzer;
+
+    char file_path_copy[MAX_NAME_SIZE + 5];       // +5 wegen dem ".txt"
+    strcpy(file_path_copy, "./");                 // "./" ist der Pfad zum aktuellen Ordner
+    strcat(file_path_copy, konto->Benutzer_Name); // strcat: String concatenation: hängt den Benutzer_Name an den Pfad an
+    strcat(file_path_copy, ".txt");
+
+    benutzer = fopen(file_path_copy, "w"); // "w" = write: Datei wird zum Schreiben geöffnet
+    if (benutzer == NULL)
+    {
+        printf("FEHLER: Datei konnte nicht geoeffnet werden. \n");
+        return;
+    }
+
+    fprintf(benutzer, "Name : %s\n", konto->Benutzer_Name); // fprintf: Schreibt in die Datei
+    fprintf(benutzer, "Password: %s\n", konto->Benutzer_Password);
+    fprintf(benutzer, "Geldbetrag am Konto: %.2lf\n", konto->Geldbetrag_am_Konto);
+    fprintf(benutzer, "Transaktionssummer: TRK\n");
+
+    fclose(benutzer);
+}
+
+// Funktion zur Passwort-Eingabe mit Verschleierung -> Funktion wurde durch Unterstützung von Albin Ehrengruber erstellt
+void hidePasswordInput(char *password)
+{
+    int index = 0;
+    char ch;
+
+    while (1)               // Endlosschleife, bis die Eingabetaste gedrückt wurde, um die Eingabe zu beenden
+    {
+        ch = getch();       // Ein Zeichen einlesen, ohne es anzuzeigen
+
+        if (ch == '\r') // Wenn die Eingabetaste gedrückt wurde, beende die Eingabe, \r: Carriage Return, bewirkt, dass der Cursor an den Anfang der Zeile springt
+        {
+            password[index] = '\0'; // Nullterminierung des Passworts
+            break;
+        }
+        else if (ch == 8) // Wenn Backspace gedrückt wurde
+        {
+            if (index > 0)
+            {
+                index--;
+                printf("\b \b"); // Lösche das zuletzt eingegebene Zeichen, \b = Backspace
+            }
+        }
+        else
+        {
+            if (index < MAX_PASSWORD_SIZE - 1) // -1: Platz für die Nullterminierung
+            {
+                password[index] = ch;
+                index++;
+                printf("*"); // Zeige ein '*' anstatt des eingegebenen Zeichens
+            }
+        }
+    }
+}
+
+int LogIn(Bankkonto *konto)
+{
+    char line[256];                                  // Verwendung: Zeile für Zeile aus der Datei lesen
+    char Benutzer_Password_Check[MAX_PASSWORD_SIZE]; // Wird für die Passwort-Überprüfung benötigt
+
+    FILE *benutzer;
+    char file_path[MAX_NAME_SIZE + 5]; // +5 für ".txt"
+    strcpy(file_path, "./");           // "./" ist der Pfad zum aktuellen Ordner
+
+    printf("\nLogIn Abfrage \n");
     printf("Benutzer_Name eingeben: \n");
 
-    scanf("%s", Benutzer_Name);
-    strcpy(file_name, Benutzer_Name);               // siehe 'neue_Anmeldung' fuer Beschreibung
-    strcat(file_name, ".txt");
+    scanf("%s", konto->Benutzer_Name);
+    strcat(file_path, konto->Benutzer_Name);
+    strcat(file_path, ".txt");
 
-    benutzer= fopen(file_name, "r");            // FILE ist zum LESEN geoeffnet
-// fehlerabfrage
-    if(benutzer == NULL){
-        printf("FEHLER\nKeine Datei vorhanden");
-    }
-
-// Password-Abfrage
-
-    printf("Bitte gebe deinen Benutzer_Password ein. \n");                      // Benutzer_PW abfragen
-    getchar();
-    counter = 0 ;
-    a = 0 ;                                      // 'a' hat sonst noch das 'enter' von oben
-    while ( a != 10)                            // solange kein 'Enter' eingegeben wird
+    benutzer = fopen(file_path, "r"); // "r" = read: Datei wird zum Lesen geöffnet
+    if (benutzer == NULL)
     {
-        a = getchar();
-        Benutzer_Password[counter] =a;          // richtigen Werte an die ersten stellen speichern
-
-        counter++;                              // counter fuer die Gr. des neues ARRAY (Benutzer_Password_Resized)
-    }
-
-
-//PW wird aus der Datei geholen und gespeichert in Benutzer_Password_Check(das Gr. Array)
-    a = 0 ;
-    while(counter_02 < MAX_SIZE && (a != 10) ){
-        file_content_int01 = fgetc(benutzer);
-        //  printf("file_content_01 : %i\n", file_content_01);
-
-        if(file_content_int01 == 'P') {                      // pruefen ob pointer in der Datei bei 'P' ist
-            //    printf("in der ersten Schleife ");
-            file_content_int02 = fgetc(benutzer);       // und pruefen ob Zweite stelle in 'W'
-            if (file_content_int02 == 'W') {
-                //       printf("in der Zweiten Schleife ");
-                for (int i = 0; a != 10 ; ++i) {           // die darauf folgenden buchstaben bis zum '\0' speichern
-                    a = fgetc(benutzer);                // '10' steht fuer den INTEGER-Wert des 'ENTER'
-                    Benutzer_Password_Check[i] = a;
-                    printf("%c", Benutzer_Password_Check[i]);
-                    counter_01++;                         // counter fuer die Gr. des neues ARRAY (Benutzer_Password__Check_Resized)
-                }
-            }
-        }
-        counter_02++;       // um die Schleife zu verlassen (sicherung)
-    }
-
-
-
-
-// hier passiert die Umwandlung beim EINGEGEBEN PASSWORT des alten Gr. Arrays in die angepasste ideale Gr.
-    char Benutzer_Password_Resized[counter] ;                                // fuer die Spaetere abfrage muss auch die Gr. gleich sein
-    strcpy(Benutzer_Password_Resized, Benutzer_Password );       // siehe: PW vergleich
-    printf("Echtes_Benutzer_Password : %s\n", Benutzer_Password_Resized);
-
-// hier passiert die Umwandlung beim HINTERLEGEN PASSWORT des alten Gr. Arrays in die angepasste ideale Gr.
-    char Benutzer_Password_Ceck_Resized[counter_01] ;                                // fuer die Spaetere abfrage muss auch die Gr. gleich sein
-    strcpy(Benutzer_Password_Ceck_Resized, Benutzer_Password_Check );       // siehe: PW vergleich
-    printf("Echtes_Benutzer_Password_Check : %s\n", Benutzer_Password_Ceck_Resized);
-
-// Abfrage, ob PW korrekt
-    if(strcmp(Benutzer_Password_Resized, Benutzer_Password_Ceck_Resized) == 0 ){                           // PW vergleichen
-        printf("Sie haben Zugang \n");
-        // zugang zum Benutzer_Konto herstellen                 TO-DO
-    }
-
-//////BEACHTE: IWIE funktionert die PW abfrage mit 'strcmp' noch nicht
-
-
-
-
-
-//#########################################   ENDE   #####################################################
-
-    fclose(benutzer);
-
-}
-
-
-void Zugang_Transaktionen(){
-    char buchstabe = 'w';
-
-    char Benutzer_Name[] = "MAX";
-//    char Benutzer_Password[MAX_SIZE];
-//    char Benutzer_Password_Check[MAX_SIZE];
-    char file_name[MAX_SIZE];
-
-    char file_content_01[MAX_SIZE];                // hier wird der Inhalt der Datei gespeichert
-    char file_content_02[MAX_SIZE];                // hier wird der Inhalt der Datei gespeichert
-
-    char ueberweisung_01[255];
-    char ueberweisung_02[255];
-    char ueberweisung_03[255];
-
-    float Ueberweisungs_Betrag_01 = 0;
-    float Ueberweisungs_Betrag_02 = 0;
-    float Ueberweisungs_Betrag_03 = 0;
-
-    int file_content_int01 = 0;                      // fuer die 'fgetc'-funktion
-    int file_content_int02 = 0;
-    int file_content_int03 = 0;
-    int a, b, c, d ;
-    int counter = 0 ;
-
-    double file_address_01 = 0;
-
-    FILE * benutzer ;
-    benutzer= fopen("mar.txt", "a");
-// fehlerabfrage
-    if(benutzer == NULL){
         printf("FEHLER\nKeine Datei vorhanden");
+        return 0;
     }
 
-//######################################## ZUGANG TRANSAKTIONEN   ##############################
+    printf("Bitte gebe dein Benutzer_Password ein. \n");
+    hidePasswordInput(Benutzer_Password_Check); // Passwort mit Verschleierung eingeben
 
-// Betrag eintragen und in Datei Speichern
-    printf("Zu Ueberweisenden Betrag eingeben: ");
-    scanf("%i", &file_content_int01);
+    int loginErfolgreich = 0;                // Hinzugefügt, um den Login-Status zu überprüfen
 
-// Betrag hinzufuegen
-    printf("Wie viel soll dem Konto hinzugefuegt werden : ");
-    scanf("%s", file_content_01);
+    // Jetzt das Passwort einlesen:
+    while (fgets(line, sizeof(line), benutzer) != NULL) // fgets: Liest eine Zeile aus der Datei
+    {
+        if (strstr(line, "Password:") != NULL) // Wenn "Password:" in der Zeile enthalten ist; strstr: Sucht nach einem String in einem String
+        {
+            char gespeichertesPassword[MAX_PASSWORD_SIZE];       // Wird für die Passwort-Überprüfung benötigt
+            sscanf(line, "Password: %s", gespeichertesPassword); // sscanf: Liest einen formatierten String | Unterschied printf: Schreibt in die Konsole
 
-    fprintf(benutzer, "Transaktion von : %s", Benutzer_Name);
-    fprintf(benutzer, "\n");
-    fprintf(benutzer, "Transaktionssummer : TRK%s", file_content_01);
-//    fprintf(benutzer, "Transaktionspartner", );
+            if (strcmp(gespeichertesPassword, Benutzer_Password_Check) == 0) // Wenn die Passwörter übereinstimmen
+            {
+                printf("\n\nDu hast Zugang \n");
+                printf("Benutzer_Name: %s \n", konto->Benutzer_Name);
 
-
-
-
-//    printf("Folgender Betrag wird hinzugefuegt : %s ", file_content_01);
-
-    fclose(benutzer);
-
-
-
-// Abfrage an Datei, welcher Betrag vorhanden ist
-    benutzer= fopen("mar.txt", "r");
-    while (file_content_int01 != EOF ){
-        file_content_int01 = fgetc(benutzer);
-        //  printf("file_content_01 : %i\n", file_content_01);
-        if(file_content_int01 == 'T') {                      // pruefen ob pointer in der Datei bei 'P' ist
-            //    printf("in der ersten Schleife ");
-            file_content_int02 = fgetc(benutzer);       // und pruefen ob Zweite stelle in 'W'
-            if (file_content_int02 == 'R') {
-                //       printf("in der Zweiten Schleife ");
-                file_content_int03 = fgetc(benutzer);
-                if (file_content_int03 == 'K') {
-
-
-                    printf("TRK: ");
-                    while (file_content_int01 != 10) {
-                        //speicher die folgenden Zeichen in var, bis das erste Leerzeichen kommt
-                        file_content_int01 = fgetc(benutzer);
-                        printf("%c", file_content_int01);
-
-                        file_content_01[counter] = file_content_int01;
-                        counter++;
+                // Jetzt das Guthaben einlesen
+                while (fgets(line, sizeof(line), benutzer) != NULL) // Solange die Datei nicht zu Ende ist
+                {
+                    if (strstr(line, "Geldbetrag am Konto:") != NULL) // Wenn "Geldbetrag am Konto:" in der Zeile enthalten ist
+                    {
+                        sscanf(line, "Geldbetrag am Konto: %lf", &(konto->Geldbetrag_am_Konto));
+                        break;
                     }
                 }
+
+                printf("Aktuelles Guthaben: %.2lf \n", konto->Geldbetrag_am_Konto);
+                loginErfolgreich = 1; // Login erfolgreich
+                break;
             }
         }
     }
+
     fclose(benutzer);
 
-    benutzer= fopen("mar.txt", "r+");
+    if (!loginErfolgreich) // Wenn der Login nicht erfolgreich war
+    {
+        printf("\nFalsches Passwort \n");
+    }
 
-    strcpy(file_content_02,ueberweisung_01);
-// dateipointer ermitteln, um die belegten stellen nach BETRAG und TRK zu aendern
-    printf("Die aktuelle Position des Dateipointers ist: %i \n", pos);
-
-
-    fseek(benutzer, pos, SEEK_SET);
-    fprintf(benutzer, file_content_02);
+    return loginErfolgreich; // Überprüft, ob der Login erfolgreich war
 }
 
-void test(){
+void zugang_Transaktionen(Bankkonto *konto) // Bankkonto *konto: Pointer auf ein Bankkonto
+{
+    FILE *benutzer;
+    char file_path[MAX_NAME_SIZE + 5]; // +5 für ".txt"
+    strcpy(file_path, "./");
+    strcat(file_path, konto->Benutzer_Name);
+    strcat(file_path, ".txt");
 
-    long int pos ;
-    long int *ptr_pos;
-    ptr_pos = &pos ;
-
-    char buchstabe = 'w';
-
-    char Benutzer_Name[] = "MAX";
-//    char Benutzer_Password[MAX_SIZE];
-//    char Benutzer_Password_Check[MAX_SIZE];
-    char file_name[MAX_SIZE];
-
-    char file_content_01[MAX_SIZE];                // hier wird der Inhalt der Datei gespeichert
-    char file_content_02[MAX_SIZE];                // hier wird der Inhalt der Datei gespeichert
-
-    char ueberweisung_01[]= "300";
-    char ueberweisung_02[255];
-    char ueberweisung_03[255];
-
-    float Ueberweisungs_Betrag_01 = 0;
-    float Ueberweisungs_Betrag_02 = 0;
-    float Ueberweisungs_Betrag_03 = 0;
-
-    int file_content_int01 = 0;                      // fuer die 'fgetc'-funktion
-    int file_content_int02 = 0;
-    int file_content_int03 = 0;
-    int a, b, c, d ;
-    int counter = 0 ;
-
-    double file_address_01 = 0;
-
-    FILE * benutzer ;
-    benutzer= fopen("mar.txt", "r");
-// fehlerabfrage
-    if(benutzer == NULL){
+    benutzer = fopen(file_path, "r"); // "r" = read: Datei wird zum Lesen geöffnet
+    if (benutzer == NULL)
+    {
         printf("FEHLER\nKeine Datei vorhanden");
+        return;
     }
 
-//#########################################   TEST   ###########################################
+    double aktuellerBetrag = 0.0;
 
+    char line[256];
+    while (fgets(line, sizeof(line), benutzer) != NULL) // fgets: Liest eine Zeile aus der Datei
+    {
+        if (strstr(line, "Geldbetrag am Konto:") != NULL) // strstr: Sucht nach einem String in einem String
+        {
+            sscanf(line, "Geldbetrag am Konto: %lf", &aktuellerBetrag); // sscanf: Liest einen formatierten String
+            break;
+        }
+    }
 
-//######################################## ZUGANG TRANSAKTIONEN   ##############################
+    fclose(benutzer);
 
-// Abfrage an Datei, welcher Betrag vorhanden ist
+    int transaktionsOption; // 1 = Einzahlung, 2 = Auszahlung
+    printf("\nWillkommen zu Deinen Transaktionen\n");
+    printf("1. Geld zum Konto hinzufuegen\n");
+    printf("2. Geld vom Konto abheben\n");
+    printf("Bitte waehle eine Option: ");
 
-    while (file_content_int01 != EOF ){
-        file_content_int01 = fgetc(benutzer);
-        //  printf("file_content_01 : %i\n", file_content_01);
-        if(file_content_int01 == 'T') {                      // pruefen ob pointer in der Datei bei 'P' ist
-            //    printf("in der ersten Schleife ");
-            file_content_int02 = fgetc(benutzer);       // und pruefen ob Zweite stelle in 'W'
-            if (file_content_int02 == 'R') {
-                //       printf("in der Zweiten Schleife ");
-                file_content_int03 = fgetc(benutzer);
-                if(file_content_int03 == 'K'){
-                    printf("TRK: ");
+    scanf("%d", &transaktionsOption);
 
-                    pos = ftell(benutzer);
+    switch (transaktionsOption)
+    {
+    case 1: // Einzahlung
+        printf("\nAktuelles Guthaben: %.2lf\n", aktuellerBetrag);
+        printf("\nWie viel soll dem Konto hinzugefuegt werden: ");
+        double einzahlungsBetrag;
+        scanf("%lf", &einzahlungsBetrag);
 
-                    counter = 0 ;
-                    while (file_content_int01 != 10 && file_content_int01 != (-1)){
-                        //speicher die folgenden Zeichen in var, bis das erste Leerzeichen kommt
-                        file_content_int01 = fgetc(benutzer);
-                        printf("%c", file_content_int01);
+        aktuellerBetrag += einzahlungsBetrag;
 
-                        file_content_01[counter] = file_content_int01;
-                        counter++;
-                    }
-                    printf("\n");
-                    // resizend
-//                    benutzer= fopen("mar.txt", "a");
-//                    char file_content_01_resized[counter] ;
-//                    strcpy(file_content_01_resized, file_content_01);
-//                    printf("%s", file_content_01_resized);
-//                    fprintf(benutzer,"%s",file_content_01_resized);
-                    //fputs(file_content_01_resized, benutzer);           // TO-DO: hier werden noch 'NULL' mit uebergeben
-                }
-            }
+        break;
+
+    case 2: // Auszahlung
+        printf("Aktuelles Guthaben: %.2lf\n", aktuellerBetrag);
+        printf("\nWie viel soll vom Konto abgehoben werden: ");
+        double abhebungsBetrag;
+        scanf("%lf", &abhebungsBetrag);
+
+        if (abhebungsBetrag > aktuellerBetrag)
+        {
+            printf("Nicht ausreichendes Guthaben auf dem Konto.\n");
+            return;
         }
 
+        aktuellerBetrag -= abhebungsBetrag;
+        break;
+
+    default:
+        printf("Ungueltige Option\n");
+        return;
     }
 
-    fclose(benutzer);
+    benutzer = fopen(file_path, "r+"); // "r+" = read and write: Datei wird zum Lesen und Schreiben geöffnet
+    if (benutzer == NULL)
+    {
+        printf("FEHLER\nKeine Datei vorhanden");
+        return;
+    }
 
-    benutzer= fopen("mar.txt", "r+");
-
-    strcpy(file_content_02,ueberweisung_01);
-// dateipointer ermitteln, um die belegten stellen nach BETRAG und TRK zu aendern
-    printf("Die aktuelle Position des Dateipointers ist: %i \n", pos);
-
-
-    fseek(benutzer, pos, SEEK_SET);
-    fprintf(benutzer, file_content_02);
-
-
-
-
-//#######################################   ENDE   ############################################
-
-//#####################################   ENDE   ###############################################
+    fseek(benutzer, 0, SEEK_SET); // fseek: Setzt den Dateizeiger auf eine bestimmte Position, in dem Fall auf den Anfang der Datei
+    fprintf(benutzer, "Name : %s\n", konto->Benutzer_Name);
+    fprintf(benutzer, "Password: %s\n", konto->Benutzer_Password);
+    fprintf(benutzer, "Geldbetrag am Konto: %.2lf\n", aktuellerBetrag);
+    fprintf(benutzer, "Transaktionssummer: TRK\n");
 
     fclose(benutzer);
 
+    printf("Transaktion erfolgreich durchgefuehrt.\n");
+    printf("Name: %s\n", konto->Benutzer_Name);
+    printf("Aktuelles Guthaben: %.2lf\n", aktuellerBetrag);
 }
 
-
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int main(){
-    neue_Anmeldung();
-    LogIn();
-//    test();
-
-        return 0 ;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
+// ###################################################   FUNKTIONEN ENDE  ######################################
