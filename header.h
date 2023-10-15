@@ -1,24 +1,37 @@
-// #pragma once                    //sorgt dafür, dass die Header-Datei nur einmal eingebunden wird
+// ######################################################################################################
+// ############################  Kompensationsarbeit SWE 2 - Bankanwendung   ############################
+// ######################################################################################################
+
+// AUTHOR:    MARKUS BAMMER
+// DATE:      2023-10
+// FILE:      header.h
+// DESCRIPTON:    Bankanwendung mit Anmeldung, Transaktionen und Speicherung der Daten in einer Datei
+
+
+// ######################################################################################################
+// ###########################################  HEADER-DATEI  ###########################################
+// ######################################################################################################
+
+// #############################################   INCLUDES   ###########################################
+
 #ifndef INC_01_BANKANWENDUNG_AUFGERAEUMT_HEADER_H
 #define INC_01_BANKANWENDUNG_AUFGERAEUMT_HEADER_H
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 #define MAX_SIZE 100
 #define MAX_NAME_SIZE 100
 #define MAX_PASSWORD_SIZE 100
+
+// ##############################################  STRUCTS   #############################################
 
 typedef struct
 {
     char Benutzer_Name[MAX_NAME_SIZE];
     char Benutzer_Password[MAX_PASSWORD_SIZE];
     double Geldbetrag_am_Konto;
-    unsigned int Kontonummer[2]; // Kontonummer[0] = 1. Teil der Kontonummer, Kontonummer[1] = 2. Teil der Kontonummer
+    char IBAN_Nummer[MAX_SIZE];
 } Bankkonto;
 
-// ###################################################   FUNKTIONSPROTOTYPEN   ######################################
+// ##########################################  FUNKTIONSPROTOTYPEN   #######################################
 
 void begruessung();
 void neue_Anmeldung();
